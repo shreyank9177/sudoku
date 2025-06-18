@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sudoku</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        overflow-x: hidden;
+      }
+      .container {
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        grid-template-rows: repeat(9, 1fr);
+        width: 90vmin;
+        height: 90vmin;
+        max-width: 450px;
+        max-height: 450px;
+        margin: 10px 0;
+      }
+      .cell {
+        width: 100%;
+        height: 100%;
+        outline: none;
+        text-align: center;
+        font-size: 1.5rem;
+        border: 1px solid black;
+      }
+
+      /* Bold borders for 3x3 grid */
+      .cell:nth-child(3n + 1) {
+        border-left: 3px solid black;
+      }
+      .cell:nth-child(n + 19):nth-child(-n + 27),
+      .cell:nth-child(n + 46):nth-child(-n + 54),
+      .cell:nth-child(n + 73):nth-child(-n + 81) {
+        border-bottom: 3px solid black;
+      }
+      .cell:nth-child(n):nth-child(-n + 9) {
+        border-top: 3px solid black;
+      }
+      .cell:nth-child(9n) {
+        border-right: 3px solid black;
+      }
+
+      header {
+        height: auto;
+        font-size: 2.5rem;
+        margin-top: 10px;
+        text-align: center;
+      }
+
+      .controls {
+        width: 100%;
+        flex-wrap: wrap;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+        gap: 10px;
+      }
+
+      button {
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: bold;
+        color: white;
+        background: linear-gradient(135deg, #4a90e2, #007aff);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        flex: 1 1 120px;
+        max-width: 200px;
+      }
+
+      button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      }
+
+      @media screen and (max-width: 600px) {
+        header {
+          font-size: 2rem;
+        }
+        .cell {
+          font-size: 1.2rem;
+        }
+        button {
+          font-size: 12px;
+          padding: 8px 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header><h1>Sudoku</h1></header>
+    <div class="container"></div>
+    <div class="controls">
+      <button class="refresh" onclick="getnewboard()">new sudoku</button>
+      <button class="answer" onclick="showans()">show answer</button>
+      <button class="clear" onclick="submit()">submit</button>
+      <button class="clear" onclick="fillboard()">Clear</button>
+    </div>
+
+    <script>
+      let val = 0;
+      let sol = 0;
+      let subbmittedans = [];
+      let container = document.querySelector(".container");
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          let input = document.createElement("input");
+          input.type = "text";
+          input.maxLength = 1;
+          input.classList.add("cell");
+          input.classList.add(`c-${j}${i}`);
+          container.appendChild(input);
+        }
+      }
+      function getdata() {
+        fetch("https://sudoku-api.vercel.app/api/dosuku")
+          .then((res) => res.json())
+          .then((data) => {
+            val = data.newboard.grids[0].value.flat();
+            sol = data.newboard.grids[0].solution.flat();
+          })
+          .then(() => {
+            fillboard();
+          })
+          .catch((err) => {
+            console.log("error while getting data", err);
+          });
+      }
+      function fillboard() {
+        for (let i = 0; i < 9; i++) {
+          for (let j = 0; j < 9; j++) {
+            let cell = document.querySelector(`.c-${j}${i}`);
+            let value1 = val[j + i * 9];
+            if (value1 === 0) {
+              cell.value = "";
+              cell.readOnly = false;
+              cell.style.backgroundColor = "white";
+            } else {
+              cell.value = value1;
+              cell.readOnly = true;
+              cell.style.backgroundColor = "rgba(100,100,100,0.2)";
+            }
+          }
+        }
+      }
+      getdata();
+      function getnewboard() {
+        getdata();
+      }
+      function showans() {
+        for (let i = 0; i < 9; i++) {
+          for (let j = 0; j < 9; j++) {
+            let cell = document.querySelector(`.c-${j}${i}`);
+            let value1 = sol[j + i * 9];
+            cell.value = value1;
+            cell.readOnly = true;
+          }
+        }
+      }
+      function submit() {
+        subbmittedans = [];
+        for (let i = 0; i < 9; i++) {
+          for (let j = 0; j < 9; j++) {
+            let cell = document.querySelector(`.c-${j}${i}`);
+            if (cell.value === "") {
+              subbmittedans = [];
+              errorfun();
+              return;
+            } else {
+              subbmittedans.push(cell.value);
+            }
+          }
+        }
+        if (arraysEqual(subbmittedans, sol)) {
+          alert("Correct Answer!");
+        } else {
+          alert("wrong Answer!");
+        }
+      }
+      function errorfun() {
+        alert("please fill the suduko first!");
+      }
+      function arraysEqual(arr1, arr2) {
+        return arr1.every((val, index) => Number(val) === arr2[index]);
+      }
+    </script>
+  </body>
+</html>
