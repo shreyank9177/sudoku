@@ -133,6 +133,10 @@
           input.maxLength = 1;
           input.classList.add("cell");
           input.classList.add(`c-${j}${i}`);
+          // Allow only digits 1-9
+          input.oninput = function () {
+          this.value = this.value.replace(/[^1-9]/g, "");
+};
           container.appendChild(input);
         }
       }
